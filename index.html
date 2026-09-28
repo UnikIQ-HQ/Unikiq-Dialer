@@ -48,7 +48,9 @@
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
     .modal-content { background: #1e293b; padding: 24px; border-radius: 12px; width: 90%; max-width: 420px; }
     
-    .appointment-item { background: #0f172a; border: 1px solid #334155; padding: 14px; border-radius: 8px; margin-bottom: 10px; }
+    .appointment-item { background: #0f172a; border: 1px solid #334155; padding: 14px; border-radius: 8px; margin-bottom: 10px; transition: border-color 0.2s, transform 0.1s; }
+    .appointment-item.clickable { cursor: pointer; }
+    .appointment-item.clickable:hover { border-color: #38bdf8; transform: translateY(-2px); }
     .appointment-date { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
     
     .search-input { border: 2px solid #38bdf8; font-size: 16px; padding: 12px; }
@@ -260,6 +262,30 @@
     }
   }
 
+  /* NY FUNKTION: Læs et specifikt valgt lead ind direkte */
+  function selectLeadDirectly(lead) {
+    if (!lead) return;
+    currentLead = lead;
+
+    document.getElementById('companyName').textContent = lead.company_name || 'Ukendt Firma';
+    document.getElementById('contactPerson').textContent = lead.contact_person ? `Kontakt: ${lead.contact_person}` : '';
+    document.getElementById('phoneLink').textContent = lead.phone || 'Intet nummer';
+    document.getElementById('phoneLink').href = `tel:${lead.phone}`;
+    document.getElementById('callBtn').href = `tel:${lead.phone}`;
+
+    const cvrVal = lead.cvr || lead.vat_number || lead.cvr_number || 'Ikke angivet';
+    const empVal = lead.employees || lead.antal_ansatte || lead.employee_count || 'Ikke angivet';
+    const addrVal = lead.address || lead.adresse || 'Ikke angivet';
+
+    document.getElementById('cvrPill').textContent = `CVR: ${cvrVal}`;
+    document.getElementById('employeesPill').textContent = `Ansatte: ${empVal}`;
+    document.getElementById('addressPill').textContent = `📍 ${addrVal}`;
+    document.getElementById('callNotes').value = lead.notes || '';
+
+    // Skift fane direkte tilbage til Dialeren
+    switchTab('dialer');
+  }
+
   async function loadNextLead() {
     const campaignSelect = document.getElementById('campaignSelect');
     if (!campaignSelect || !campaignSelect.value) return;
@@ -277,25 +303,7 @@
       const res = await fetch(`${WEBHOOK_GET_LEAD}?campaign_id=${campaignId}`);
       const data = await res.json();
       if (data && data.id) {
-        currentLead = data;
-        document.getElementById('companyName').textContent = data.company_name || 'Ukendt Firma';
-        document.getElementById('contactPerson').textContent = data.contact_person ? `Kontakt: ${data.contact_person}` : '';
-        document.getElementById('phoneLink').textContent = data.phone || 'Intet nummer';
-        document.getElementById('phoneLink').href = `tel:${data.phone}`;
-        document.getElementById('callBtn').href = `tel:${data.phone}`;
-
-        // CVR, Ansatte & Adresse felter
-        const cvrVal = data.cvr || data.vat_number || data.cvr_number || 'Ikke angivet';
-        const empVal = data.employees || data.antal_ansatte || data.employee_count || 'Ikke angivet';
-        const addrVal = data.address || data.adresse || 'Ikke angivet';
-
-        document.getElementById('cvrPill').textContent = `CVR: ${cvrVal}`;
-        document.getElementById('employeesPill').textContent = `Ansatte: ${empVal}`;
-        document.getElementById('addressPill').textContent = `📍 ${addrVal}`;
-
-        if (data.notes) {
-          document.getElementById('callNotes').value = data.notes;
-        }
+        selectLeadDirectly(data);
       } else {
         currentLead = null;
         document.getElementById('companyName').textContent = '🎉 Ingen flere emner!';
@@ -315,7 +323,6 @@
     const brokerFields = document.getElementById('brokerFields');
     const campaignId = document.getElementById('campaignSelect').value;
     
-    // Vis e-mail felter for Møde Booket, Lukket Ordre og Send Info
     emailFields.style.display = 'block';
     document.getElementById('recipientContact').value = currentLead ? (currentLead.contact_person || '') : '';
     document.getElementById('recipientEmail').value = currentLead ? (currentLead.email || '') : '';
@@ -331,7 +338,7 @@
       document.getElementById('modalTitle').textContent = '✉️ Send Tilbud & Vælg Opfølgning';
     } else {
       document.getElementById('modalTitle').textContent = '📅 Vælg tilbageringningstidspunkt';
-      emailFields.style.display = 'none'; // Skjul kun ved standard Ring Igen
+      emailFields.style.display = 'none';
     }
     document.getElementById('dateModal').style.display = 'flex';
   }
@@ -469,7 +476,6 @@
   function renderAppointments(items) {
     const list = document.getElementById('appointmentsList');
     
-    // Skjul 'Ikke ringet' emner fra selve aftalelisten
     const activeItems = (items || []).filter(a => a.status !== 'Ikke ringet' && a.status);
 
     if (!activeItems || activeItems.length === 0) {
@@ -502,7 +508,8 @@
       }
 
       const div = document.createElement('div');
-      div.className = 'appointment-item';
+      div.className = 'appointment-item clickable';
+      div.onclick = () => selectLeadDirectly(item);
       div.innerHTML = `
         <div class="appointment-date" style="color:${tagColor};">${tagText}: ${formattedDate}</div>
         <strong style="font-size:16px;">${item.company_name}</strong> ${item.contact_person ? '(' + item.contact_person + ')' : ''}<br>
@@ -513,7 +520,7 @@
     });
   }
 
-  /* SØGE FUNKTION */
+  /* SØGE FUNKTION MED KLIK-TIL-LÆS-IND LOGIK */
   function handleSearch() {
     const query = document.getElementById('searchInput').value.toLowerCase().trim();
     const list = document.getElementById('searchResultsList');
@@ -542,13 +549,14 @@
     list.innerHTML = '';
     matches.forEach(item => {
       const div = document.createElement('div');
-      div.className = 'appointment-item';
+      div.className = 'appointment-item clickable';
+      div.onclick = () => selectLeadDirectly(item);
       div.innerHTML = `
-        <div class="appointment-date" style="color:#38bdf8;">STATUS: ${item.status || 'Ikke ringet'}</div>
+        <div class="appointment-date" style="color:#38bdf8;">STATUS: ${item.status || 'Ikke ringet'} <span style="float:right; color:#4ade80; font-size:12px;">⚡ Klik for at åbne i dialer</span></div>
         <strong style="font-size:16px;">${item.company_name}</strong> ${item.cvr ? '[CVR: ' + item.cvr + ']' : ''}<br>
         <span style="color:#94a3b8;">Kontakt: ${item.contact_person || 'Ikke angivet'}</span><br>
         ${(item.address || item.adresse) ? '<span style="color:#eab308; font-size:13px;">📍 ' + (item.address || item.adresse) + '</span><br>' : ''}
-        <a href="tel:${item.phone}" style="color:#4ade80; text-decoration:none; font-weight:bold;">📞 ${item.phone}</a><br>
+        <span style="color:#4ade80; font-weight:bold;">📞 ${item.phone}</span><br>
         <small style="color:#cbd5e1;">Noter: ${item.notes || 'Ingen noter'}</small>
       `;
       list.appendChild(div);
