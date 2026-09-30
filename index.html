@@ -54,6 +54,13 @@
     .appointment-date { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
     
     .search-input { border: 2px solid #38bdf8; font-size: 16px; padding: 12px; }
+
+    /* TOAST NOTIFICATION STYLING */
+    #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+    .toast { background: #334155; color: white; padding: 12px 20px; border-radius: 8px; margin-top: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 14px; border-left: 4px solid #38bdf8; animation: slideIn 0.3s ease; }
+    .toast.error { border-left-color: #ef4444; background: #451a1a; }
+    .toast.success { border-left-color: #22c55e; }
+    @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
   </style>
 </head>
 <body>
@@ -174,7 +181,7 @@
       </select>
     </div>
 
-    <!-- E-MAIL FELTER (Vises nu ved BÅDE Møde, Tilbud og Ordre) -->
+    <!-- E-MAIL FELTER -->
     <div id="emailFields" style="display:none; margin-top:12px;">
       <label style="font-size:12px; color:#38bdf8; font-weight:bold;">MODTAGER E-MAIL (KUNDENS EMAIL)</label>
       <input type="email" id="recipientEmail" placeholder="f.eks. kontakt@firma.dk">
@@ -190,17 +197,31 @@
   </div>
 </div>
 
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
 <script>
   const WEBHOOK_GET_CAMPAIGNS = 'https://n8n.unikiq.dk/webhook/dialer-get-campaigns';
   const WEBHOOK_GET_LEAD = 'https://n8n.unikiq.dk/webhook/dialer-get-lead';
   const WEBHOOK_SAVE_RESULT = 'https://n8n.unikiq.dk/webhook/dialer-save-result';
   const WEBHOOK_GET_APPOINTMENTS = 'https://n8n.unikiq.dk/webhook/dialer-get-appointments';
   const WEBHOOK_CREATE_DRAFT = 'https://n8n.unikiq.dk/webhook/unikiqsalgsassistent';
+  const WEBHOOK_SEARCH_LEADS = 'https://n8n.unikiq.dk/webhook/dialer-search';
 
   let currentLead = null;
   let selectedStatus = '';
   let allAppointments = [];
   let currentTab = 'dialer';
+  let searchTimeout = null;
+
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    setTimeout(() => { toast.remove(); }, 4000);
+  }
 
   async function init() {
     await fetchCampaigns();
@@ -211,6 +232,7 @@
   async function fetchCampaigns() {
     try {
       const res = await fetch(WEBHOOK_GET_CAMPAIGNS);
+      if (!res.ok) throw new Error("Fejl fra server");
       const data = await res.json();
       const select = document.getElementById('campaignSelect');
       select.innerHTML = '';
@@ -221,7 +243,10 @@
         select.appendChild(opt);
       });
       updateScript();
-    } catch(e) { console.error("Fejl ved hentning af kampagner:", e); }
+    } catch(e) {
+      console.error("Fejl ved hentning af kampagner:", e);
+      showToast("Kunne ikke hente kampagner. Tjek n8n forbindelse.", "error");
+    }
   }
 
   function onCampaignChange() {
@@ -262,7 +287,6 @@
     }
   }
 
-  /* NY FUNKTION: Læs et specifikt valgt lead ind direkte */
   function selectLeadDirectly(lead) {
     if (!lead) return;
     currentLead = lead;
@@ -282,7 +306,6 @@
     document.getElementById('addressPill').textContent = `📍 ${addrVal}`;
     document.getElementById('callNotes').value = lead.notes || '';
 
-    // Skift fane direkte tilbage til Dialeren
     switchTab('dialer');
   }
 
@@ -301,6 +324,7 @@
 
     try {
       const res = await fetch(`${WEBHOOK_GET_LEAD}?campaign_id=${campaignId}`);
+      if (!res.ok) throw new Error("Fejl fra server");
       const data = await res.json();
       if (data && data.id) {
         selectLeadDirectly(data);
@@ -312,11 +336,12 @@
     } catch(e) { 
       console.error("Fejl ved hentning af lead:", e);
       document.getElementById('companyName').textContent = 'Kunne ikke hente emne';
+      showToast("Kunne ikke indlæse næste lead.", "error");
     }
   }
 
   function openDateModal(status) {
-    if (!currentLead) { alert("Intet aktivt lead at gemme for."); return; }
+    if (!currentLead) { showToast("Intet aktivt lead valgt.", "error"); return; }
     selectedStatus = status;
     
     const emailFields = document.getElementById('emailFields');
@@ -349,7 +374,7 @@
 
   async function confirmAppointment() {
     const datetime = document.getElementById('appointmentTime').value;
-    if (!datetime) { alert('Vælg venligst en dato og tid!'); return; }
+    if (!datetime) { showToast('Vælg venligst en dato og tid!', 'error'); return; }
     
     const brokerSelect = document.getElementById('brokerSelect');
     const selectedBroker = brokerSelect ? brokerSelect.value : '';
@@ -380,7 +405,10 @@
             broker: selectedBroker
           })
         });
-      } catch(e) { console.error("Fejl ved afsendelse af webhook:", e); }
+      } catch(e) { 
+        console.error("Fejl ved afsendelse af webhook:", e);
+        showToast("Fejl ved afsendelse af e-mail kladde.", "error");
+      }
     }
 
     closeModal();
@@ -393,7 +421,7 @@
     const cleanDate = (dateVal && dateVal !== 'null' && dateVal !== 'undefined') ? dateVal : '';
 
     try {
-      await fetch(WEBHOOK_SAVE_RESULT, {
+      const res = await fetch(WEBHOOK_SAVE_RESULT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -403,8 +431,11 @@
           appointment_date: cleanDate
         })
       });
+      if (!res.ok) throw new Error("Fejl ved gemning");
+      showToast(`Resultat gemt: ${status}`, "success");
     } catch(e) {
       console.error("Fejl ved gemning af resultat:", e);
+      showToast("Kunne ikke gemme resultat!", "error");
     }
 
     await loadNextLead();
@@ -438,19 +469,34 @@
     const campaignId = campaignSelect.value;
     try {
       const res = await fetch(`${WEBHOOK_GET_APPOINTMENTS}?campaign_id=${campaignId}`);
-      allAppointments = await res.json();
-      updateCounters(allAppointments);
+      if (!res.ok) throw new Error("Fejl fra server");
+      const data = await res.json();
+      
+      // Hvis backend returnerer objekt med uncalled_count, udpakkes det her
+      if (data && !Array.isArray(data) && data.appointments) {
+        allAppointments = data.appointments;
+        updateCounters(allAppointments, data.uncalled_count);
+      } else {
+        allAppointments = Array.isArray(data) ? data : [];
+        updateCounters(allAppointments);
+      }
+
       renderAppointments(allAppointments);
-    } catch(e) { console.error("Fejl ved hentning af aftaler:", e); }
+    } catch(e) { 
+      console.error("Fejl ved hentning af aftaler:", e);
+      showToast("Kunne ikke hente aftalelisten.", "error");
+    }
   }
 
-  function updateCounters(items) {
+  function updateCounters(items, directUncalledCount = null) {
     if (!Array.isArray(items)) return;
 
     const meetings = items.filter(a => a.status === 'Møde Booket' || a.status === 'Lukket Ordre').length;
     const offers = items.filter(a => a.status === 'Send Info' || a.status === 'Sendt tilbud').length;
     const callbacks = items.filter(a => a.status === 'Ring Igen').length;
-    const uncalled = items.filter(a => a.status === 'Ikke ringet' || !a.status).length;
+    
+    // Brug det direkte tal fra backend hvis tilgængeligt, ellers lokal beregning
+    const uncalled = directUncalledCount !== null ? directUncalledCount : items.filter(a => a.status === 'Ikke ringet' || !a.status).length;
 
     document.getElementById('countMeetings').textContent = meetings;
     document.getElementById('countOffers').textContent = offers;
@@ -512,55 +558,67 @@
       div.onclick = () => selectLeadDirectly(item);
       div.innerHTML = `
         <div class="appointment-date" style="color:${tagColor};">${tagText}: ${formattedDate}</div>
-        <strong style="font-size:16px;">${item.company_name}</strong> ${item.contact_person ? '(' + item.contact_person + ')' : ''}<br>
-        <span style="color:#4ade80;">📞 ${item.phone}</span><br>
+        <strong style="font-size:16px;">${item.company_name || 'Ukendt Firma'}</strong> ${item.contact_person ? '(' + item.contact_person + ')' : ''}<br>
+        <span style="color:#4ade80;">📞 ${item.phone || 'Intet nummer'}</span><br>
         <small style="color:#cbd5e1;">Noter: ${item.notes || 'Ingen noter'}</small>
       `;
       list.appendChild(div);
     });
   }
 
-  /* SØGE FUNKTION MED KLIK-TIL-LÆS-IND LOGIK */
+  /* SØGE FUNKTION MOD N8N BACKEND MED DEBOUNCE */
   function handleSearch() {
-    const query = document.getElementById('searchInput').value.toLowerCase().trim();
+    const query = document.getElementById('searchInput').value.trim();
     const list = document.getElementById('searchResultsList');
+    const campaignSelect = document.getElementById('campaignSelect');
+    
+    if (!campaignSelect || !campaignSelect.value) return;
+    const campaignId = campaignSelect.value;
 
     if (!query) {
       list.innerHTML = '<p style="color:#94a3b8;">Indtast et søgeord ovenfor for at finde et emne.</p>';
       return;
     }
 
-    const matches = allAppointments.filter(item => {
-      const company = (item.company_name || '').toLowerCase();
-      const contact = (item.contact_person || '').toLowerCase();
-      const phone = (item.phone || '').toLowerCase();
-      const cvr = (item.cvr || item.vat_number || '').toLowerCase();
-      const address = (item.address || item.adresse || '').toLowerCase();
-      const notes = (item.notes || '').toLowerCase();
+    if (searchTimeout) clearTimeout(searchTimeout);
 
-      return company.includes(query) || contact.includes(query) || phone.includes(query) || cvr.includes(query) || address.includes(query) || notes.includes(query);
-    });
+    list.innerHTML = '<p style="color:#38bdf8;">🔍 Søger i databasen...</p>';
 
-    if (matches.length === 0) {
-      list.innerHTML = `<p style="color:#ef4444;">Ingen emner matchede søgningen "${query}".</p>`;
-      return;
-    }
+    searchTimeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`${WEBHOOK_SEARCH_LEADS}?campaign_id=${campaignId}&q=${encodeURIComponent(query)}`);
+        if (!res.ok) throw new Error("Fejl under søgning");
+        const matches = await res.json();
 
-    list.innerHTML = '';
-    matches.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'appointment-item clickable';
-      div.onclick = () => selectLeadDirectly(item);
-      div.innerHTML = `
-        <div class="appointment-date" style="color:#38bdf8;">STATUS: ${item.status || 'Ikke ringet'} <span style="float:right; color:#4ade80; font-size:12px;">⚡ Klik for at åbne i dialer</span></div>
-        <strong style="font-size:16px;">${item.company_name}</strong> ${item.cvr ? '[CVR: ' + item.cvr + ']' : ''}<br>
-        <span style="color:#94a3b8;">Kontakt: ${item.contact_person || 'Ikke angivet'}</span><br>
-        ${(item.address || item.adresse) ? '<span style="color:#eab308; font-size:13px;">📍 ' + (item.address || item.adresse) + '</span><br>' : ''}
-        <span style="color:#4ade80; font-weight:bold;">📞 ${item.phone}</span><br>
-        <small style="color:#cbd5e1;">Noter: ${item.notes || 'Ingen noter'}</small>
-      `;
-      list.appendChild(div);
-    });
+        if (!Array.isArray(matches) || matches.length === 0) {
+          list.innerHTML = `<p style="color:#ef4444;">Ingen emner matchede søgningen "${query}".</p>`;
+          return;
+        }
+
+        list.innerHTML = '';
+        matches.forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'appointment-item clickable';
+          div.onclick = () => selectLeadDirectly(item);
+          div.innerHTML = `
+            <div class="appointment-date" style="color:#38bdf8;">
+              STATUS: ${item.status || 'Ikke ringet'} 
+              <span style="float:right; color:#4ade80; font-size:12px;">⚡ Klik for at åbne i dialer</span>
+            </div>
+            <strong style="font-size:16px;">${item.company_name || 'Ukendt Firma'}</strong> ${item.cvr ? '[CVR: ' + item.cvr + ']' : ''}<br>
+            <span style="color:#94a3b8;">Kontakt: ${item.contact_person || 'Ikke angivet'}</span><br>
+            ${(item.address || item.adresse) ? '<span style="color:#eab308; font-size:13px;">📍 ' + (item.address || item.adresse) + '</span><br>' : ''}
+            <span style="color:#4ade80; font-weight:bold;">📞 ${item.phone || 'Intet nummer'}</span><br>
+            <small style="color:#cbd5e1;">Noter: ${item.notes || 'Ingen noter'}</small>
+          `;
+          list.appendChild(div);
+        });
+      } catch(e) {
+        console.error("Fejl ved søgning:", e);
+        list.innerHTML = '<p style="color:#ef4444;">Kunne ikke udføre søgningen. Prøv igen.</p>';
+        showToast("Fejl under søgning i databasen.", "error");
+      }
+    }, 300);
   }
 
   init();
