@@ -612,6 +612,7 @@
     }
   }
 
+  // OPTIMERET AFSTALE & OPFØLGNINGS-VISNING
   function renderAppointments(items) {
     const list = document.getElementById('appointmentsList');
     
@@ -621,15 +622,35 @@
       list.innerHTML = '<p style="color:#94a3b8;">Ingen emner i denne kategori for den valgte kampagne.</p>';
       return;
     }
+
+    // KRONOLOGISK SORTERING (Nærmeste datoer øverst, derefter uden dato)
+    activeItems.sort((a, b) => {
+      const timeA = new Date(a.booked_for || a.callback_at || a.appointment_date || '2099-12-31').getTime();
+      const timeB = new Date(b.booked_for || b.callback_at || b.appointment_date || '2099-12-31').getTime();
+      return timeA - timeB;
+    });
+
     list.innerHTML = '';
+    const now = new Date();
 
     activeItems.forEach(item => {
       const rawTime = item.booked_for || item.callback_at || item.appointment_date;
       let formattedDate = 'Ingen dato angivet';
+      let statusBadge = '';
+      
       if (rawTime) {
         const d = new Date(rawTime);
         if (!isNaN(d.getTime())) {
           formattedDate = d.toLocaleString('da-DK', { dateStyle: 'short', timeStyle: 'short' });
+          
+          const isToday = d.toDateString() === now.toDateString();
+          const isPast = d < now;
+
+          if (isPast && item.status === 'Ring Igen') {
+            statusBadge = `<span style="background:#ef4444; color:white; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">🚨 OVER SKREDET</span>`;
+          } else if (isToday) {
+            statusBadge = `<span style="background:#22c55e; color:#0f172a; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">⚡ I DAG</span>`;
+          }
         } else {
           formattedDate = rawTime;
         }
@@ -650,10 +671,15 @@
       div.className = 'appointment-item clickable';
       div.onclick = () => selectLeadDirectly(item);
       div.innerHTML = `
-        <div class="appointment-date" style="color:${tagColor};">${tagText}: ${formattedDate}</div>
+        <div class="appointment-date" style="color:${tagColor}; display:flex; align-items:center; justify-space-between;">
+          <span>${tagText}: ${formattedDate} ${statusBadge}</span>
+          <span style="color:#38bdf8; font-size:12px; font-weight:normal;">Klik for at åbne ➔</span>
+        </div>
         <strong style="font-size:16px;">${item.company_name || 'Ukendt Firma'}</strong> ${item.contact_person ? '(' + item.contact_person + ')' : ''}<br>
         <span style="color:#4ade80;">📞 ${item.phone || 'Intet nummer'}</span><br>
-        <small style="color:#cbd5e1;">Noter: ${item.notes || 'Ingen noter'}</small>
+        <small style="color:#cbd5e1; display:block; margin-top:6px; background:#1e293b; padding:8px; border-radius:6px; border-left:3px solid #38bdf8;">
+          <strong>Noter:</strong> ${item.notes || 'Ingen noter'}
+        </small>
       `;
       list.appendChild(div);
     });
