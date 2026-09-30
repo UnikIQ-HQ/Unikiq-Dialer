@@ -159,7 +159,7 @@
       <div class="status-grid">
         <button class="btn-status" onclick="submitResult('Svarede Ikke')">❌ Svarede Ikke</button>
         <button class="btn-status" onclick="submitResult('Ikke Interesseret')">🚫 Ikke Interesseret</button>
-        <button class="btn-status" style="border-color:#38bdf8; color:#38bdf8;" onclick="openDateModal('Send Info')">✉️️ Send Info / Tilbud</button>
+        <button class="btn-status" style="border-color:#38bdf8; color:#38bdf8;" onclick="openDateModal('Send Info')">✉ Send Info / Tilbud</button>
         <button class="btn-status" style="border-color:#eab308; color:#eab308;" onclick="openDateModal('Ring Igen')">📅 Ring Igen</button>
         <button id="meetingBtn" class="btn-status" style="border-color:#22c55e; color:#22c55e; grid-column: span 2;" onclick="openDateModal('Møde Booket')">🎉 Møde Booket</button>
       </div>
@@ -253,7 +253,7 @@
     const savedUser = localStorage.getItem('unikiq_user');
     if (savedUser) {
       currentUser = JSON.parse(savedUser);
-      document.getElementById('sellerNameLabel').textContent = currentUser.name;
+      document.getElementById('sellerNameLabel').textContent = currentUser.name || currentUser.username;
       document.getElementById('loginModal').style.display = 'none';
       await init();
     } else {
@@ -275,15 +275,18 @@
       });
       const data = await res.json();
 
-      if (data.success && data.user) {
-        currentUser = data.user;
+      // Håndterer både direkte brugerobjekt fra n8n og indpakkede objekter
+      const user = (data && (data.user || (data.id || data.username ? data : null)));
+
+      if (user && (user.id || user.username)) {
+        currentUser = user;
         localStorage.setItem('unikiq_user', JSON.stringify(currentUser));
-        document.getElementById('sellerNameLabel').textContent = currentUser.name;
+        document.getElementById('sellerNameLabel').textContent = currentUser.name || currentUser.username;
         document.getElementById('loginModal').style.display = 'none';
-        showToast(`Velkommen tilbage, ${currentUser.name}!`, 'success');
+        showToast(`Velkommen tilbage, ${currentUser.name || currentUser.username}!`, 'success');
         await init();
       } else {
-        showToast(data.message || 'Forkert login', 'error');
+        showToast(data.message || 'Forkert brugernavn eller adgangskode', 'error');
       }
     } catch(e) {
       console.error("Fejl ved login:", e);
@@ -480,7 +483,7 @@
             appointment_date: datetime,
             notes: currentNotes,
             broker: selectedBroker,
-            seller: currentUser ? currentUser.name : 'Ukendt'
+            seller: currentUser ? (currentUser.name || currentUser.username) : 'Ukendt'
           })
         });
       } catch(e) { 
@@ -507,7 +510,7 @@
           status: status,
           notes: notes,
           appointment_date: cleanDate,
-          seller: currentUser ? currentUser.name : 'Ukendt'
+          seller: currentUser ? (currentUser.name || currentUser.username) : 'Ukendt'
         })
       });
       if (!res.ok) throw new Error("Fejl ved gemning");
