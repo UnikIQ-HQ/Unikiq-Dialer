@@ -612,7 +612,7 @@
     }
   }
 
-  // OPTIMERET AFSTALE & OPFØLGNINGS-VISNING
+  // OPTIMERET AFTALE & OPFØLGNINGS-VISNING (ROBUST TIDSFORMAT)
   function renderAppointments(items) {
     const list = document.getElementById('appointmentsList');
     
@@ -631,7 +631,10 @@
     });
 
     list.innerHTML = '';
+
+    // Dagens dato i YYYY-MM-DD format til tjek af "I DAG" / "OVERSKREDET"
     const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     activeItems.forEach(item => {
       const rawTime = item.booked_for || item.callback_at || item.appointment_date;
@@ -639,17 +642,25 @@
       let statusBadge = '';
       
       if (rawTime) {
-        const d = new Date(rawTime);
-        if (!isNaN(d.getTime())) {
-          formattedDate = d.toLocaleString('da-DK', { dateStyle: 'short', timeStyle: 'short' });
+        // ROBUST FORMATERING: Splitter strengen direkte uden om browserens tidszone-skift
+        const cleanTime = String(rawTime).replace('T', ' ');
+        const parts = cleanTime.split(' ');
+        
+        if (parts.length >= 2) {
+          const dateParts = parts[0].split('-'); // YYYY, MM, DD
+          const timeParts = parts[1].split(':'); // HH, MM
           
-          const isToday = d.toDateString() === now.toDateString();
-          const isPast = d < now;
-
-          if (isPast && item.status === 'Ring Igen') {
-            statusBadge = `<span style="background:#ef4444; color:white; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">🚨 OVER SKREDET</span>`;
-          } else if (isToday) {
-            statusBadge = `<span style="background:#22c55e; color:#0f172a; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">⚡ I DAG</span>`;
+          if (dateParts.length === 3 && timeParts.length >= 2) {
+            formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}, ${timeParts[0]}.${timeParts[1]}`;
+            
+            const itemDateStr = parts[0]; // YYYY-MM-DD
+            if (itemDateStr < todayStr && item.status === 'Ring Igen') {
+              statusBadge = `<span style="background:#ef4444; color:white; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">🚨 OVERSKREDET</span>`;
+            } else if (itemDateStr === todayStr) {
+              statusBadge = `<span style="background:#22c55e; color:#0f172a; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">⚡ I DAG</span>`;
+            }
+          } else {
+            formattedDate = rawTime;
           }
         } else {
           formattedDate = rawTime;
@@ -671,7 +682,7 @@
       div.className = 'appointment-item clickable';
       div.onclick = () => selectLeadDirectly(item);
       div.innerHTML = `
-        <div class="appointment-date" style="color:${tagColor}; display:flex; align-items:center; justify-space-between;">
+        <div class="appointment-date" style="color:${tagColor}; display:flex; align-items:center; justify-content:space-between;">
           <span>${tagText}: ${formattedDate} ${statusBadge}</span>
           <span style="color:#38bdf8; font-size:12px; font-weight:normal;">Klik for at åbne ➔</span>
         </div>
