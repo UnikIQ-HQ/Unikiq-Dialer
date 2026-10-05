@@ -164,7 +164,7 @@
       <textarea id="callNotes" rows="3" placeholder="Skriv noter fra opkaldet her..."></textarea>
       
       <div class="status-grid">
-        <button class="btn-status" onclick="submitResult('Svarede Ikke')">❌ Svarede Ikke</button>
+        <button class="btn-status" onclick="submitNoAnswer()">❌ Svarede Ikke</button>
         <button class="btn-status" onclick="submitResult('Ikke Interesseret')">🚫 Ikke Interesseret</button>
         <button class="btn-status" style="border-color:#38bdf8; color:#38bdf8;" onclick="openDateModal('Send Info')">✉ Send Info / Tilbud</button>
         <button class="btn-status" style="border-color:#eab308; color:#eab308;" onclick="openDateModal('Ring Igen')">📅 Ring Igen</button>
@@ -509,6 +509,14 @@
     await submitResult(selectedStatus, datetime);
   }
 
+  // SENDER "SVAREDE IKKE" MED TIDSPUNKT 2 TIMER FREM
+  function submitNoAnswer() {
+    const twoHoursLater = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const localISO = new Date(twoHoursLater.getTime() - (twoHoursLater.getTimezoneOffset() * 60000))
+                      .toISOString().slice(0, 16);
+    submitResult('Svarede Ikke', localISO);
+  }
+
   async function submitResult(status, dateVal = null) {
     if (!currentLead) return;
     const notes = document.getElementById('callNotes').value;
@@ -612,7 +620,7 @@
     }
   }
 
-  // OPTIMERET AFTALE & OPFØLGNINGS-VISNING (ROBUST TIDSFORMAT)
+  // OPTIMERET AFTALE & OPFØLGNINGS-VISNING
   function renderAppointments(items) {
     const list = document.getElementById('appointmentsList');
     
@@ -631,10 +639,7 @@
     });
 
     list.innerHTML = '';
-
-    // Dagens dato i YYYY-MM-DD format til tjek af "I DAG" / "OVERSKREDET"
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     activeItems.forEach(item => {
       const rawTime = item.booked_for || item.callback_at || item.appointment_date;
@@ -642,25 +647,17 @@
       let statusBadge = '';
       
       if (rawTime) {
-        // ROBUST FORMATERING: Splitter strengen direkte uden om browserens tidszone-skift
-        const cleanTime = String(rawTime).replace('T', ' ');
-        const parts = cleanTime.split(' ');
-        
-        if (parts.length >= 2) {
-          const dateParts = parts[0].split('-'); // YYYY, MM, DD
-          const timeParts = parts[1].split(':'); // HH, MM
+        const d = new Date(rawTime);
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toLocaleString('da-DK', { dateStyle: 'short', timeStyle: 'short' });
           
-          if (dateParts.length === 3 && timeParts.length >= 2) {
-            formattedDate = `${dateParts[2]}.${dateParts[1]}.${dateParts[0]}, ${timeParts[0]}.${timeParts[1]}`;
-            
-            const itemDateStr = parts[0]; // YYYY-MM-DD
-            if (itemDateStr < todayStr && item.status === 'Ring Igen') {
-              statusBadge = `<span style="background:#ef4444; color:white; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">🚨 OVERSKREDET</span>`;
-            } else if (itemDateStr === todayStr) {
-              statusBadge = `<span style="background:#22c55e; color:#0f172a; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">⚡ I DAG</span>`;
-            }
-          } else {
-            formattedDate = rawTime;
+          const isToday = d.toDateString() === now.toDateString();
+          const isPast = d < now;
+
+          if (isPast && (item.status === 'Ring Igen' || item.status === 'Svarede Ikke')) {
+            statusBadge = `<span style="background:#ef4444; color:white; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">🚨 OVER SKREDET</span>`;
+          } else if (isToday) {
+            statusBadge = `<span style="background:#22c55e; color:#0f172a; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">⚡ I DAG</span>`;
           }
         } else {
           formattedDate = rawTime;
@@ -676,6 +673,9 @@
       } else if (item.status === 'Send Info' || item.status === 'Sendt tilbud') {
         tagText = '✉️ TILBUD / OPFØLGNING';
         tagColor = '#38bdf8';
+      } else if (item.status === 'Svarede Ikke') {
+        tagText = '❌ SVAREDE IKKE';
+        tagColor = '#ef4444';
       }
 
       const div = document.createElement('div');
