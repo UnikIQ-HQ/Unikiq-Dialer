@@ -262,7 +262,8 @@
     'transport_logistik': ['Vognmand', 'Spedition', 'Kurer', 'Lager'],
     'ejendom_udlejning': ['Boligudlejning', 'Erhvervsudlejning', 'Ejendomsservice', 'Ejendomsudvikling', 'Ejendomsadministration', 'Ejendomsmægler', 'Boligselskab', 'Facility Management'],
     'engros_detail': ['Engros', 'Detailhandel', 'E-handel', 'Webshop', 'Import', 'Eksport', 'B2B Handel', 'Specialhandel'],
-    'industri_produktion': ['Maskinfabrik', 'Metal & Stål', 'Plast & Gummi', 'Elektronik', 'Fødevarer & Bryggeri', 'Emballage', 'Automatisering & Robotter', 'Procesindustri']
+    'industri_produktion': ['Maskinfabrik', 'Metal & Stål', 'Plast & Gummi', 'Elektronik', 'Fødevarer & Bryggeri', 'Emballage', 'Automatisering & Robotter', 'Procesindustri'],
+    'hotel_restauration': ['Hotel', 'Restaurant', 'Café', 'Kro', 'Camping', 'Catering', 'Bar', 'Natklub', 'Event', 'Museum', 'Forlystelsespark']
   };
 
   function showToast(message, type = 'info') {
@@ -382,6 +383,8 @@
       options = SUB_INDUSTRIES['engros_detail'];
     } else if (campaignId.includes('industri') || selectedOptionText.includes('industri') || selectedOptionText.includes('produktion')) {
       options = SUB_INDUSTRIES['industri_produktion'];
+    } else if (campaignId.includes('hotel') || selectedOptionText.includes('hotel') || selectedOptionText.includes('restauration') || selectedOptionText.includes('oplevelser')) {
+      options = SUB_INDUSTRIES['hotel_restauration'];
     }
 
     if (options && options.length > 0) {
