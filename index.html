@@ -261,7 +261,8 @@
     'it_tele': ['Software', 'Konsulent', 'Hosting', 'Webbureau', 'Netværk'],
     'transport_logistik': ['Vognmand', 'Spedition', 'Kurer', 'Lager'],
     'ejendom_udlejning': ['Boligudlejning', 'Erhvervsudlejning', 'Ejendomsservice', 'Ejendomsudvikling', 'Ejendomsadministration', 'Ejendomsmægler', 'Boligselskab', 'Facility Management'],
-    'engros_detail': ['Engros', 'Detailhandel', 'E-handel', 'Webshop', 'Import', 'Eksport', 'B2B Handel', 'Specialhandel']
+    'engros_detail': ['Engros', 'Detailhandel', 'E-handel', 'Webshop', 'Import', 'Eksport', 'B2B Handel', 'Specialhandel'],
+    'industri_produktion': ['Maskinfabrik', 'Metal & Stål', 'Plast & Gummi', 'Elektronik', 'Fødevarer & Bryggeri', 'Emballage', 'Automatisering & Robotter', 'Procesindustri']
   };
 
   function showToast(message, type = 'info') {
@@ -379,6 +380,8 @@
       options = SUB_INDUSTRIES['ejendom_udlejning'];
     } else if (campaignId.includes('engros') || selectedOptionText.includes('engros') || selectedOptionText.includes('detail')) {
       options = SUB_INDUSTRIES['engros_detail'];
+    } else if (campaignId.includes('industri') || selectedOptionText.includes('industri') || selectedOptionText.includes('produktion')) {
+      options = SUB_INDUSTRIES['industri_produktion'];
     }
 
     if (options && options.length > 0) {
