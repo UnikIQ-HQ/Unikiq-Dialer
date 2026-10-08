@@ -263,7 +263,8 @@
     'ejendom_udlejning': ['Boligudlejning', 'Erhvervsudlejning', 'Ejendomsservice', 'Ejendomsudvikling', 'Ejendomsadministration', 'Ejendomsmægler', 'Boligselskab', 'Facility Management'],
     'engros_detail': ['Engros', 'Detailhandel', 'E-handel', 'Webshop', 'Import', 'Eksport', 'B2B Handel', 'Specialhandel'],
     'industri_produktion': ['Maskinfabrik', 'Metal & Stål', 'Plast & Gummi', 'Elektronik', 'Fødevarer & Bryggeri', 'Emballage', 'Automatisering & Robotter', 'Procesindustri'],
-    'hotel_restauration': ['Hotel', 'Restaurant', 'Café', 'Kro', 'Camping', 'Catering', 'Bar', 'Natklub', 'Event', 'Museum', 'Forlystelsespark']
+    'hotel_restauration': ['Hotel', 'Restaurant', 'Café', 'Kro', 'Camping', 'Catering', 'Bar', 'Natklub', 'Event', 'Museum', 'Forlystelsespark'],
+    'finans_jura': ['Revisor', 'Advokat', 'Bogholder', 'Finansiering', 'Pension', 'Forsikring', 'Investering', 'Inkasso']
   };
 
   function showToast(message, type = 'info') {
@@ -371,9 +372,11 @@
 
     let options = null;
 
-    if (campaignId.includes('byg') || selectedOptionText.includes('bygge') || campaignId === '3') {
+    if (campaignId.includes('finans') || selectedOptionText.includes('finans') || selectedOptionText.includes('jura')) {
+      options = SUB_INDUSTRIES['finans_jura'];
+    } else if (campaignId.includes('byg') || selectedOptionText.includes('bygge') || campaignId === '3') {
       options = SUB_INDUSTRIES['byg_anlaeg'];
-    } else if (campaignId === 'it_tele' || campaignId.includes('it') || selectedOptionText.includes('software') || selectedOptionText.includes('rådgivning')) {
+    } else if (campaignId === 'it_tele' || campaignId.includes('it') || selectedOptionText.includes('software')) {
       options = SUB_INDUSTRIES['it_tele'];
     } else if (campaignId.includes('transport') || selectedOptionText.includes('logistik')) {
       options = SUB_INDUSTRIES['transport_logistik'];
