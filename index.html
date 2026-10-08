@@ -97,7 +97,7 @@
   </div>
 
   <div class="card" style="margin-bottom: 15px;">
-    <label style="font-size:12px; color:#94a3b8; font-weight:bold;">VALGT KAMPAGNE</label>
+    <label style="font-size:12px; color:#94a3b8; font-weight:bold;">VALGT BRANCHEKAMPAGNE</label>
     <select id="campaignSelect" onchange="onCampaignChange()"></select>
   </div>
 
@@ -245,6 +245,7 @@
   let allAppointments = [];
   let currentTab = 'dialer';
   let searchTimeout = null;
+  let loadedCampaigns = []; // Indeholder hele campaign-objektet inkl. script_template
 
   function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
@@ -320,14 +321,19 @@
       const res = await fetch(WEBHOOK_GET_CAMPAIGNS);
       if (!res.ok) throw new Error("Fejl fra server");
       const data = await res.json();
+      
+      loadedCampaigns = Array.isArray(data) ? data : [];
       const select = document.getElementById('campaignSelect');
       select.innerHTML = '';
-      data.forEach(c => {
+      
+      loadedCampaigns.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
-        opt.textContent = `${c.name} (${c.client_name})`;
+        const clientText = c.client_name ? ` (${c.client_name})` : '';
+        opt.textContent = `${c.name || c.industry_name || c.id}${clientText}`;
         select.appendChild(opt);
       });
+      
       updateScript();
     } catch(e) {
       console.error("Fejl ved hentning af kampagner:", e);
@@ -347,7 +353,16 @@
     const scriptBox = document.getElementById('scriptBox');
     const meetingBtn = document.getElementById('meetingBtn');
 
-    if (campaignId == '2') {
+    // Find den valgte kampagne i den hentede liste
+    const campaign = loadedCampaigns.find(c => String(c.id) === String(campaignId));
+
+    if (campaign && campaign.script_template) {
+      // Indlæs det dynamiske salgsscript direkte fra PostgreSQL!
+      scriptBox.innerHTML = `
+        <strong>🎯 Salgsscript (${campaign.name || 'Unikiq'}):</strong><br>
+        <em>"${campaign.script_template}"</em>
+      `;
+    } else if (campaignId === 'komplet_lej' || campaignId === '2') {
       scriptBox.innerHTML = `
         <strong>🎯 Salgsscript (Komplet Lej):</strong><br>
         <em>"Hej [Navn], jeg ringer fra Komplet Lej – Danmarks uvildige mæglerhus for byggeri.<br>
@@ -355,10 +370,6 @@
         I får leverandørpris 1:1 uden tillæg, sparer 18-24% på transporten, og har én fast rådgiver samt 24/7 vagttelefon.<br>
         Hvornår kan vi tage et uforpligtende 30-minutters møde og regne på et af jeres kommende projekter?"</em>
       `;
-      if (meetingBtn) {
-        meetingBtn.textContent = '🎉 Møde Booket';
-        meetingBtn.setAttribute('onclick', "openDateModal('Møde Booket')");
-      }
     } else {
       scriptBox.innerHTML = `
         <strong>🎯 Salgsscript (Unikiq):</strong><br>
@@ -366,9 +377,15 @@
         Vi leverer fuldautomatiserede salgsassistent- og AI-løsninger (DMA), der fjerner 80% af det manuelle arbejde og sætter jeres mødebooking på fuld automatik.<br>
         Skal vi sætte et kort uforpligtende introduktionsmøde op og vise jer, hvad vi kan automatisere for jer?"</em>
       `;
-      if (meetingBtn) {
-        meetingBtn.textContent = '🎉 Salg / Velkomst';
-        meetingBtn.setAttribute('onclick', "openDateModal('Lukket Ordre')");
+    }
+
+    if (meetingBtn) {
+      if (campaignId === 'komplet_lej' || campaignId === 'byg_anlaeg' || campaignId === '2') {
+        meetingBtn.textContent = '🎉 Møde Booket';
+        meetingBtn.setAttribute('onclick', "openDateModal('Møde Booket')");
+      } else {
+        meetingBtn.textContent = '🎉 Møde / Salg';
+        meetingBtn.setAttribute('onclick', "openDateModal('Møde Booket')");
       }
     }
   }
@@ -449,7 +466,7 @@
 
     if (status === 'Møde Booket') {
       document.getElementById('modalTitle').textContent = '🎉 Vælg mødetidspunkt & mægler';
-      if (brokerFields && campaignId == '2') brokerFields.style.display = 'block';
+      if (brokerFields && (campaignId === 'komplet_lej' || campaignId === '2')) brokerFields.style.display = 'block';
     } else if (status === 'Lukket Ordre') {
       document.getElementById('modalTitle').textContent = '🎉 Registrer Salg & Send Velkomst';
     } else if (status === 'Send Info') {
@@ -655,7 +672,7 @@
           const isPast = d < now;
 
           if (isPast && (item.status === 'Ring Igen' || item.status === 'Svarede Ikke')) {
-            statusBadge = `<span style="background:#ef4444; color:white; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">🚨 OVER SKREDET</span>`;
+            statusBadge = `<span style="background:#ef4444; color:white; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">🚨 OVERSKREDET</span>`;
           } else if (isToday) {
             statusBadge = `<span style="background:#22c55e; color:#0f172a; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:bold; margin-left:8px;">⚡ I DAG</span>`;
           }
