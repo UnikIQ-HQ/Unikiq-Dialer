@@ -19,8 +19,8 @@
     .stat-number { font-size: 20px; font-weight: bold; margin-top: 4px; color: #38bdf8; }
     .stat-label { font-size: 11px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
     
-    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-    .tab-btn { flex: 1; padding: 12px; border: none; background: #334155; color: #94a3b8; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn { flex: 1; min-width: 140px; padding: 12px; border: none; background: #334155; color: #94a3b8; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
     .tab-btn.active { background: #38bdf8; color: #0f172a; }
 
     .sub-tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 10px; flex-wrap: wrap; }
@@ -55,6 +55,21 @@
     .appointment-date { font-weight: bold; font-size: 14px; margin-bottom: 4px; }
     
     .search-input { border: 2px solid #38bdf8; font-size: 16px; padding: 12px; }
+
+    /* OM UNIKIQ STYLING */
+    .about-header { border-bottom: 1px solid #334155; padding-bottom: 15px; margin-bottom: 20px; }
+    .about-header h2 { color: #38bdf8; margin: 0 0 8px 0; font-size: 22px; }
+    .about-header p { color: #94a3b8; margin: 0; font-size: 14px; line-height: 1.5; }
+    
+    .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; margin-top: 20px; }
+    .team-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 18px; border-top: 3px solid #38bdf8; }
+    .team-card h3 { margin: 0 0 4px 0; font-size: 18px; color: #f8fafc; }
+    .team-card .role { color: #38bdf8; font-size: 13px; font-weight: 600; text-transform: uppercase; margin-bottom: 12px; display: block; }
+    .team-card p { color: #cbd5e1; font-size: 13px; line-height: 1.6; margin: 0; }
+    
+    .value-box { background: #1e293b; border-left: 4px solid #22c55e; padding: 14px; margin-top: 20px; border-radius: 0 8px 8px 0; }
+    .value-box h4 { margin: 0 0 6px 0; color: #22c55e; font-size: 15px; }
+    .value-box p { margin: 0; color: #cbd5e1; font-size: 13px; line-height: 1.5; }
 
     /* LOGIN MODAL OVERLAY STYLING */
     #loginModal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; justify-content: center; align-items: center; z-index: 9000; }
@@ -133,6 +148,7 @@
     <button class="tab-btn active" onclick="switchTab('dialer')">📞 Ring til Emner</button>
     <button class="tab-btn" onclick="switchTab('appointments')">📅 Aftaler & Opfølgninger</button>
     <button class="tab-btn" onclick="switchTab('search')">🔍 Søg i Emner</button>
+    <button class="tab-btn" onclick="switchTab('about')">🤝 Om Unikiq</button>
   </div>
 
   <!-- DIALER TAB -->
@@ -202,6 +218,44 @@
     </div>
     <div id="searchResultsList"><p style="color:#94a3b8;">Indtast et søgeord ovenfor for at finde et emne.</p></div>
   </div>
+
+  <!-- ABOUT / OM UNIKIQ TAB -->
+  <div id="aboutTab" style="display:none;">
+    <div class="card">
+      <div class="about-header">
+        <h2>Menneskerne bag Unikiq</h2>
+        <p>
+          Unikiq er en privatejet, stolt fynsk virksomhed med base i Faaborg. Vi tror på, at stærke teknologiske løsninger opstår i mødet mellem menneskelig indsigt, kreativ tænkning og præcis systemudvikling. Hos os handler det ikke om upersonlige algoritmer, men om rigtige mennesker, der brænder for at hjælpe danske virksomheder fremad.
+        </p>
+      </div>
+
+      <div class="team-grid">
+        <div class="team-card">
+          <h3>Charles Coleman-Mends</h3>
+          <span class="role">Medstifter & Systemarkitekt</span>
+          <p>
+            Født og opvokset i Danmark og bosiddende i Faaborg. Charles bringer en unik vinkel til teknologiverdenen med sin baggrund som musiker og kunstner. Den kreative tilgang kombinerer han med moderne programmering og avanceret systemudvikling. Det har lagt grundstenen til Unikiqs innovative koncepter og næste generations digitale erhvervsløsninger.
+          </p>
+        </div>
+
+        <div class="team-card">
+          <h3>Lukas Coleman-Mends</h3>
+          <span class="role">Medstifter & Driftsansvarlig</span>
+          <p>
+            Søn af Charles, født og opvokset i Danmark og ligeledes bosiddende i Faaborg. Lukas har fingeren på pulsen i forhold til de seneste fem års eksplosive teknologiske udvikling. Han sikrer, at Unikiqs løsninger ikke blot er teknisk avancerede, men også skaber reel, praktisk værdi og gennemskuelighed for vores kunder i hverdagen.
+          </p>
+        </div>
+      </div>
+
+      <div class="value-box">
+        <h4>🇩🇰 Dansk forankring & fuld gennemsigtighed</h4>
+        <p>
+          Vi ved, at tillid er nøglen i dansk erhvervsliv. Når I samarbejder med Unikiq, handler I med rigtige mennesker, der tager personligt ansvar for kvaliteten og gennemskueligheden af vores digitale værktøjer.
+        </p>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- DATE/TIME & EMAIL MODAL -->
@@ -623,6 +677,7 @@
     document.getElementById('dialerTab').style.display = 'none';
     document.getElementById('appointmentsTab').style.display = 'none';
     document.getElementById('searchTab').style.display = 'none';
+    document.getElementById('aboutTab').style.display = 'none';
 
     if (tab === 'dialer') {
       document.querySelectorAll('.tab-btn')[0].classList.add('active');
@@ -635,6 +690,9 @@
       document.querySelectorAll('.tab-btn')[2].classList.add('active');
       document.getElementById('searchTab').style.display = 'block';
       document.getElementById('searchInput').focus();
+    } else if (tab === 'about') {
+      document.querySelectorAll('.tab-btn')[3].classList.add('active');
+      document.getElementById('aboutTab').style.display = 'block';
     }
   }
 
@@ -653,7 +711,6 @@
       let itemsArr = [];
       let uncalledVal = null;
 
-      // Håndterer om data er et array eller et objekt med aftaler + uncalled count fra n8n
       if (Array.isArray(data)) {
         if (data.length === 1 && data[0] && (data[0].count_uncalled !== undefined || data[0].count !== undefined)) {
           uncalledVal = data[0].count_uncalled || data[0].count;
