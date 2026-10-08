@@ -372,7 +372,12 @@
     let options = null;
 
     if (campaignId === 'alle') {
-      options = null; // Skjul underkategori dropdown når "Alle emner" er valgt
+      // Samler alle unikke underkategorier fra samtlige brancher
+      const allSubCategories = new Set();
+      Object.values(SUB_INDUSTRIES).forEach(list => {
+        list.forEach(sub => allSubCategories.add(sub));
+      });
+      options = Array.from(allSubCategories).sort();
     } else if (campaignId.includes('undervisning') || selectedOptionText.includes('undervisning') || selectedOptionText.includes('kurser') || selectedOptionText.includes('kursus')) {
       options = SUB_INDUSTRIES['undervisning_kurser'];
     } else if (campaignId.includes('sundhed') || selectedOptionText.includes('sundhed') || selectedOptionText.includes('klinik') || selectedOptionText.includes('velfærd')) {
