@@ -99,6 +99,14 @@
   <div class="card" style="margin-bottom: 15px;">
     <label style="font-size:12px; color:#94a3b8; font-weight:bold;">VALGT BRANCHEKAMPAGNE</label>
     <select id="campaignSelect" onchange="onCampaignChange()"></select>
+
+    <!-- FAG / UNDERKATEGORI DROPDOWN -->
+    <div id="subIndustryWrapper" style="margin-top: 12px; display: none;">
+      <label style="font-size:12px; color:#38bdf8; font-weight:bold;">FILTER PR. FAGGRUPPE / SPECIALE</label>
+      <select id="subIndustrySelect" onchange="onSubIndustryChange()">
+        <option value="alle">Alle faggrupper (Vis alt)</option>
+      </select>
+    </div>
   </div>
 
   <!-- STATS DASHBOARD BAR -->
@@ -137,10 +145,11 @@
       <h2 id="companyName" style="margin:0; font-size:20px;">Henter lead...</h2>
       <div id="contactPerson" style="color:#94a3b8; font-size:14px; margin-top:4px;"></div>
       
-      <!-- CVR, ANSATTE & ADRESSE INFO -->
+      <!-- CVR, ANSATTE, FAG & ADRESSE INFO -->
       <div class="lead-info-pills">
         <span class="info-pill" id="cvrPill">CVR: -</span>
         <span class="info-pill" id="employeesPill" style="color:#a855f7;">Ansatte: -</span>
+        <span class="info-pill" id="industryPill" style="color:#22c55e;">Fag: -</span>
         <span class="info-pill" id="addressPill" style="color:#eab308;">📍 Adresse: -</span>
       </div>
 
@@ -245,7 +254,14 @@
   let allAppointments = [];
   let currentTab = 'dialer';
   let searchTimeout = null;
-  let loadedCampaigns = []; // Indeholder hele campaign-objektet inkl. script_template
+  let loadedCampaigns = [];
+
+  const SUB_INDUSTRIES = {
+    'byg_anlaeg': ['Tømrer', 'Murer', 'VVS', 'Elektriker', 'Entreprenør', 'Maler', 'Anlægsgartner', 'Brolægger', 'Tagdækker', 'Glarmester'],
+    'it_tele': ['Software', 'Konsulent', 'Hosting', 'Webbureau', 'Netværk'],
+    'transport_logistik': ['Vognmand', 'Spedition', 'Kurer', 'Lager'],
+    'ejendom_udlejning': ['Boligudlejning', 'Erhvervsudlejning', 'Ejendomsservice']
+  };
 
   function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
@@ -256,7 +272,6 @@
     setTimeout(() => { toast.remove(); }, 4000);
   }
 
-  // LOGIN LOGIK
   async function checkSession() {
     const savedUser = localStorage.getItem('unikiq_user');
     if (savedUser) {
@@ -282,7 +297,6 @@
         body: JSON.stringify({ username: u, password: p })
       });
       const data = await res.json();
-
       const user = (data && (data.user || (data.id || data.username ? data : null)));
 
       if (user && (user.id || user.username)) {
@@ -334,6 +348,7 @@
         select.appendChild(opt);
       });
       
+      updateSubIndustryDropdown();
       updateScript();
     } catch(e) {
       console.error("Fejl ved hentning af kampagner:", e);
@@ -341,11 +356,39 @@
     }
   }
 
+  function updateSubIndustryDropdown() {
+    const campaignId = document.getElementById('campaignSelect').value;
+    const wrapper = document.getElementById('subIndustryWrapper');
+    const select = document.getElementById('subIndustrySelect');
+
+    const options = SUB_INDUSTRIES[campaignId];
+
+    if (options && options.length > 0) {
+      select.innerHTML = '<option value="alle">Alle faggrupper (Vis alt)</option>';
+      options.forEach(sub => {
+        const opt = document.createElement('option');
+        opt.value = sub;
+        opt.textContent = sub;
+        select.appendChild(opt);
+      });
+      wrapper.style.display = 'block';
+    } else {
+      wrapper.style.display = 'none';
+      select.value = 'alle';
+    }
+  }
+
   function onCampaignChange() {
+    updateSubIndustryDropdown();
     updateScript();
     loadNextLead();
     fetchAppointments();
     if (currentTab === 'search') handleSearch();
+  }
+
+  function onSubIndustryChange() {
+    loadNextLead();
+    fetchAppointments();
   }
 
   function updateScript() {
@@ -353,11 +396,9 @@
     const scriptBox = document.getElementById('scriptBox');
     const meetingBtn = document.getElementById('meetingBtn');
 
-    // Find den valgte kampagne i den hentede liste
     const campaign = loadedCampaigns.find(c => String(c.id) === String(campaignId));
 
     if (campaign && campaign.script_template) {
-      // Indlæs det dynamiske salgsscript direkte fra PostgreSQL!
       scriptBox.innerHTML = `
         <strong>🎯 Salgsscript (${campaign.name || 'Unikiq'}):</strong><br>
         <em>"${campaign.script_template}"</em>
@@ -380,13 +421,8 @@
     }
 
     if (meetingBtn) {
-      if (campaignId === 'komplet_lej' || campaignId === 'byg_anlaeg' || campaignId === '2') {
-        meetingBtn.textContent = '🎉 Møde Booket';
-        meetingBtn.setAttribute('onclick', "openDateModal('Møde Booket')");
-      } else {
-        meetingBtn.textContent = '🎉 Møde / Salg';
-        meetingBtn.setAttribute('onclick', "openDateModal('Møde Booket')");
-      }
+      meetingBtn.textContent = '🎉 Møde Booket';
+      meetingBtn.setAttribute('onclick', "openDateModal('Møde Booket')");
     }
   }
 
@@ -402,14 +438,15 @@
 
     const cvrVal = lead.cvr || lead.vat_number || lead.cvr_number || 'Ikke angivet';
     const empVal = lead.employees || lead.antal_ansatte || lead.employee_count || 'Ikke angivet';
+    const indVal = lead.industry || 'Generelt';
     const addrVal = lead.address || lead.adresse || 'Ikke angivet';
 
     document.getElementById('cvrPill').textContent = `CVR: ${cvrVal}`;
     document.getElementById('employeesPill').textContent = `Ansatte: ${empVal}`;
+    document.getElementById('industryPill').textContent = `Fag: ${indVal}`;
     document.getElementById('addressPill').textContent = `📍 ${addrVal}`;
     document.getElementById('callNotes').value = lead.notes || '';
 
-    // Dynamisk opdatering af Google-søgelink
     const searchQuery = encodeURIComponent((lead.company_name || '') + ' ' + addrVal);
     const googleBtn = document.getElementById('googleWebsiteBtn');
     if (googleBtn) {
@@ -424,23 +461,26 @@
     if (!campaignSelect || !campaignSelect.value) return;
     
     const campaignId = campaignSelect.value;
+    const subIndustry = document.getElementById('subIndustrySelect').value || 'alle';
+
     document.getElementById('companyName').textContent = 'Henter næste emne...';
     document.getElementById('contactPerson').textContent = '';
     document.getElementById('phoneLink').textContent = '...';
     document.getElementById('cvrPill').textContent = 'CVR: -';
     document.getElementById('employeesPill').textContent = 'Ansatte: -';
+    document.getElementById('industryPill').textContent = 'Fag: -';
     document.getElementById('addressPill').textContent = '📍 Adresse: -';
     document.getElementById('callNotes').value = '';
 
     try {
-      const res = await fetch(`${WEBHOOK_GET_LEAD}?campaign_id=${campaignId}`);
+      const res = await fetch(`${WEBHOOK_GET_LEAD}?campaign_id=${campaignId}&industry=${encodeURIComponent(subIndustry)}`);
       if (!res.ok) throw new Error("Fejl fra server");
       const data = await res.json();
       if (data && data.id) {
         selectLeadDirectly(data);
       } else {
         currentLead = null;
-        document.getElementById('companyName').textContent = '🎉 Ingen flere emner!';
+        document.getElementById('companyName').textContent = '🎉 Ingen flere emner i denne kategori!';
         document.getElementById('phoneLink').textContent = '';
       }
     } catch(e) { 
@@ -526,7 +566,6 @@
     await submitResult(selectedStatus, datetime);
   }
 
-  // SENDER "SVAREDE IKKE" MED TIDSPUNKT 2 TIMER FREM
   function submitNoAnswer() {
     const twoHoursLater = new Date(Date.now() + 2 * 60 * 60 * 1000);
     const localISO = new Date(twoHoursLater.getTime() - (twoHoursLater.getTimezoneOffset() * 60000))
@@ -587,8 +626,10 @@
     const campaignSelect = document.getElementById('campaignSelect');
     if (!campaignSelect) return;
     const campaignId = campaignSelect.value;
+    const subIndustry = document.getElementById('subIndustrySelect').value || 'alle';
+
     try {
-      const res = await fetch(`${WEBHOOK_GET_APPOINTMENTS}?campaign_id=${campaignId}`);
+      const res = await fetch(`${WEBHOOK_GET_APPOINTMENTS}?campaign_id=${campaignId}&industry=${encodeURIComponent(subIndustry)}`);
       if (!res.ok) throw new Error("Fejl fra server");
       const data = await res.json();
       
@@ -637,7 +678,6 @@
     }
   }
 
-  // OPTIMERET AFTALE & OPFØLGNINGS-VISNING
   function renderAppointments(items) {
     const list = document.getElementById('appointmentsList');
     
@@ -648,7 +688,6 @@
       return;
     }
 
-    // KRONOLOGISK SORTERING (Nærmeste datoer øverst, derefter uden dato)
     activeItems.sort((a, b) => {
       const timeA = new Date(a.booked_for || a.callback_at || a.appointment_date || '2099-12-31').getTime();
       const timeB = new Date(b.booked_for || b.callback_at || b.appointment_date || '2099-12-31').getTime();
@@ -704,7 +743,7 @@
           <span style="color:#38bdf8; font-size:12px; font-weight:normal;">Klik for at åbne ➔</span>
         </div>
         <strong style="font-size:16px;">${item.company_name || 'Ukendt Firma'}</strong> ${item.contact_person ? '(' + item.contact_person + ')' : ''}<br>
-        <span style="color:#4ade80;">📞 ${item.phone || 'Intet nummer'}</span><br>
+        <span style="color:#4ade80;">📞 ${item.phone || 'Intet nummer'}</span> | <span style="color:#22c55e; font-size:12px;">Fag: ${item.industry || 'Generelt'}</span><br>
         <small style="color:#cbd5e1; display:block; margin-top:6px; background:#1e293b; padding:8px; border-radius:6px; border-left:3px solid #38bdf8;">
           <strong>Noter:</strong> ${item.notes || 'Ingen noter'}
         </small>
@@ -767,7 +806,6 @@
     }, 300);
   }
 
-  // Tjek om brugeren er logget ind ved opstart
   checkSession();
 </script>
 </body>
