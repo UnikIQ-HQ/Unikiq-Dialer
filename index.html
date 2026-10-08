@@ -265,7 +265,8 @@
     'industri_produktion': ['Maskinfabrik', 'Metal & Stål', 'Plast & Gummi', 'Elektronik', 'Fødevarer & Bryggeri', 'Emballage', 'Automatisering & Robotter', 'Procesindustri'],
     'hotel_restauration': ['Hotel', 'Restaurant', 'Café', 'Kro', 'Camping', 'Catering', 'Bar', 'Natklub', 'Event', 'Museum', 'Forlystelsespark'],
     'finans_jura': ['Revisor', 'Advokat', 'Bogholder', 'Finansiering', 'Pension', 'Forsikring', 'Investering', 'Inkasso'],
-    'service_rengoering': ['Rengøring', 'Vaskeri', 'Skadedyr', 'Sikkerhed', 'Kantiner', 'Vikar', 'Anlæg', 'Bemanding']
+    'service_rengoering': ['Rengøring', 'Vaskeri', 'Skadedyr', 'Sikkerhed', 'Kantiner', 'Vikar', 'Anlæg', 'Bemanding'],
+    'sundhed_velfaerd': ['Tandlæge', 'Fysioterapi', 'Læge', 'Kiropraktor', 'Psykolog', 'Privathospital', 'Plejecenter', 'Optiker', 'Osteopat', 'Akupunktur', 'Frisør', 'Skønhedssalon', 'Kosmetolog', 'Plastikkirurgi', 'Tattoo', 'Neglesalon', 'Massage', 'Wellness']
   };
 
   function showToast(message, type = 'info') {
@@ -373,7 +374,9 @@
 
     let options = null;
 
-    if (campaignId.includes('finans') || selectedOptionText.includes('finans') || selectedOptionText.includes('jura')) {
+    if (campaignId.includes('sundhed') || selectedOptionText.includes('sundhed') || selectedOptionText.includes('klinik') || selectedOptionText.includes('velfærd')) {
+      options = SUB_INDUSTRIES['sundhed_velfaerd'];
+    } else if (campaignId.includes('finans') || selectedOptionText.includes('finans') || selectedOptionText.includes('jura')) {
       options = SUB_INDUSTRIES['finans_jura'];
     } else if (campaignId.includes('service') || selectedOptionText.includes('service') || selectedOptionText.includes('rengøring') || selectedOptionText.includes('øvrige')) {
       options = SUB_INDUSTRIES['service_rengoering'];
