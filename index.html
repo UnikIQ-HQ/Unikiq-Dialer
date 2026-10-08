@@ -368,7 +368,6 @@
 
     let options = null;
 
-    // Tjekker om den valgte kampagne matcher Bygge & Anlæg, IT, Transport eller Ejendomme
     if (campaignId.includes('byg') || selectedOptionText.includes('bygge') || campaignId === '3') {
       options = SUB_INDUSTRIES['byg_anlaeg'];
     } else if (campaignId.includes('it') || selectedOptionText.includes('software')) {
@@ -651,14 +650,25 @@
       if (!res.ok) throw new Error("Fejl fra server");
       const data = await res.json();
       
-      if (data && !Array.isArray(data) && data.appointments) {
-        allAppointments = data.appointments;
-        updateCounters(allAppointments, data.uncalled_count);
-      } else {
-        allAppointments = Array.isArray(data) ? data : [];
-        updateCounters(allAppointments);
+      let itemsArr = [];
+      let uncalledVal = null;
+
+      // Håndterer om data er et array eller et objekt med aftaler + uncalled count fra n8n
+      if (Array.isArray(data)) {
+        if (data.length === 1 && data[0] && (data[0].count_uncalled !== undefined || data[0].count !== undefined)) {
+          uncalledVal = data[0].count_uncalled || data[0].count;
+        } else {
+          itemsArr = data;
+        }
+      } else if (data && typeof data === 'object') {
+        itemsArr = Array.isArray(data.appointments) ? data.appointments : [];
+        if (data.uncalled_count !== undefined) {
+          uncalledVal = (typeof data.uncalled_count === 'object') ? (data.uncalled_count.count_uncalled || data.uncalled_count.count) : data.uncalled_count;
+        }
       }
 
+      allAppointments = itemsArr;
+      updateCounters(allAppointments, uncalledVal);
       renderAppointments(allAppointments);
     } catch(e) { 
       console.error("Fejl ved hentning af aftaler:", e);
@@ -667,13 +677,22 @@
   }
 
   function updateCounters(items, directUncalledCount = null) {
-    if (!Array.isArray(items)) return;
+    if (!Array.isArray(items)) items = [];
 
     const meetings = items.filter(a => a.status === 'Møde Booket' || a.status === 'Lukket Ordre').length;
     const offers = items.filter(a => a.status === 'Send Info' || a.status === 'Sendt tilbud').length;
     const callbacks = items.filter(a => a.status === 'Ring Igen').length;
     
-    const uncalled = directUncalledCount !== null ? directUncalledCount : items.filter(a => a.status === 'Ikke ringet' || !a.status).length;
+    let uncalled = 0;
+    if (directUncalledCount !== null && directUncalledCount !== undefined) {
+      if (typeof directUncalledCount === 'object') {
+        uncalled = directUncalledCount.count_uncalled || directUncalledCount.count || 0;
+      } else {
+        uncalled = Number(directUncalledCount) || 0;
+      }
+    } else {
+      uncalled = items.filter(a => a.status === 'ubehandlet' || a.status === 'Ikke ringet' || !a.status).length;
+    }
 
     document.getElementById('countMeetings').textContent = meetings;
     document.getElementById('countOffers').textContent = offers;
