@@ -357,11 +357,27 @@
   }
 
   function updateSubIndustryDropdown() {
-    const campaignId = document.getElementById('campaignSelect').value;
+    const campaignSelect = document.getElementById('campaignSelect');
+    if (!campaignSelect) return;
+
+    const campaignId = String(campaignSelect.value || '').toLowerCase();
+    const selectedOptionText = String(campaignSelect.options[campaignSelect.selectedIndex]?.text || '').toLowerCase();
+    
     const wrapper = document.getElementById('subIndustryWrapper');
     const select = document.getElementById('subIndustrySelect');
 
-    const options = SUB_INDUSTRIES[campaignId];
+    let options = null;
+
+    // Tjekker om den valgte kampagne matcher Bygge & Anlæg, IT, Transport eller Ejendomme
+    if (campaignId.includes('byg') || selectedOptionText.includes('bygge') || campaignId === '3') {
+      options = SUB_INDUSTRIES['byg_anlaeg'];
+    } else if (campaignId.includes('it') || selectedOptionText.includes('software')) {
+      options = SUB_INDUSTRIES['it_tele'];
+    } else if (campaignId.includes('transport') || selectedOptionText.includes('logistik')) {
+      options = SUB_INDUSTRIES['transport_logistik'];
+    } else if (campaignId.includes('ejendom')) {
+      options = SUB_INDUSTRIES['ejendom_udlejning'];
+    }
 
     if (options && options.length > 0) {
       select.innerHTML = '<option value="alle">Alle faggrupper (Vis alt)</option>';
@@ -461,7 +477,8 @@
     if (!campaignSelect || !campaignSelect.value) return;
     
     const campaignId = campaignSelect.value;
-    const subIndustry = document.getElementById('subIndustrySelect').value || 'alle';
+    const subSelect = document.getElementById('subIndustrySelect');
+    const subIndustry = (subSelect && subSelect.value) ? subSelect.value : 'alle';
 
     document.getElementById('companyName').textContent = 'Henter næste emne...';
     document.getElementById('contactPerson').textContent = '';
@@ -626,7 +643,8 @@
     const campaignSelect = document.getElementById('campaignSelect');
     if (!campaignSelect) return;
     const campaignId = campaignSelect.value;
-    const subIndustry = document.getElementById('subIndustrySelect').value || 'alle';
+    const subSelect = document.getElementById('subIndustrySelect');
+    const subIndustry = (subSelect && subSelect.value) ? subSelect.value : 'alle';
 
     try {
       const res = await fetch(`${WEBHOOK_GET_APPOINTMENTS}?campaign_id=${campaignId}&industry=${encodeURIComponent(subIndustry)}`);
