@@ -71,7 +71,6 @@
 </head>
 <body>
 
-<!-- LOGIN MODAL (VISES HVIS MAN IKKE ER LOGGET IND) -->
 <div id="loginModal">
   <div class="login-card">
     <h2>⚡ Unikiq Login</h2>
@@ -100,7 +99,6 @@
     <label style="font-size:12px; color:#94a3b8; font-weight:bold;">VALGT BRANCHEKAMPAGNE</label>
     <select id="campaignSelect" onchange="onCampaignChange()"></select>
 
-    <!-- FAG / UNDERKATEGORI DROPDOWN -->
     <div id="subIndustryWrapper" style="margin-top: 12px; display: none;">
       <label style="font-size:12px; color:#38bdf8; font-weight:bold;">FILTER PR. FAGGRUPPE / SPECIALE</label>
       <select id="subIndustrySelect" onchange="onSubIndustryChange()">
@@ -109,7 +107,6 @@
     </div>
   </div>
 
-  <!-- STATS DASHBOARD BAR -->
   <div class="stats-bar">
     <div class="stat-card">
       <div class="stat-label">🎉 Møder/Salg</div>
@@ -135,7 +132,6 @@
     <button class="tab-btn" onclick="switchTab('search')">🔍 Søg i Emner</button>
   </div>
 
-  <!-- DIALER TAB -->
   <div id="dialerTab">
     <div class="script-box" id="scriptBox">
       Henter salgsscript...
@@ -145,7 +141,6 @@
       <h2 id="companyName" style="margin:0; font-size:20px;">Henter lead...</h2>
       <div id="contactPerson" style="color:#94a3b8; font-size:14px; margin-top:4px;"></div>
       
-      <!-- CVR, ANSATTE, FAG & ADRESSE INFO -->
       <div class="lead-info-pills">
         <span class="info-pill" id="cvrPill">CVR: -</span>
         <span class="info-pill" id="employeesPill" style="color:#a855f7;">Ansatte: -</span>
@@ -153,7 +148,6 @@
         <span class="info-pill" id="addressPill" style="color:#eab308;">📍 Adresse: -</span>
       </div>
 
-      <!-- DIREKTE LINK TIL GOOGLE / HJEMMESIDE -->
       <div style="margin-top: 12px;">
         <a id="googleWebsiteBtn" href="#" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; text-decoration: none; padding: 6px 12px; font-size: 13px; font-weight: 600; border-radius: 6px; transition: background 0.2s;">
           🌐 Åbn Hjemmeside / Google
@@ -182,7 +176,6 @@
     </div>
   </div>
 
-  <!-- APPOINTMENTS TAB -->
   <div id="appointmentsTab" style="display:none;">
     <div class="sub-tabs">
       <button class="sub-tab-btn active" onclick="filterAppointments('all', this)">📋 Alle Aftaler</button>
@@ -194,7 +187,6 @@
     <div id="appointmentsList">Henter aftaler...</div>
   </div>
 
-  <!-- SEARCH TAB -->
   <div id="searchTab" style="display:none;">
     <div class="card">
       <label style="font-size:12px; color:#38bdf8; font-weight:bold;">SØG EFTER FIRMA, CVR, ADRESSE, TLF, PERSON ELLER NOTER</label>
@@ -204,7 +196,6 @@
   </div>
 </div>
 
-<!-- DATE/TIME & EMAIL MODAL -->
 <div class="modal" id="dateModal">
   <div class="modal-content">
     <h3 id="modalTitle" style="margin-top:0;">Vælg dato og tidspunkt</h3>
@@ -236,7 +227,6 @@
   </div>
 </div>
 
-<!-- TOAST CONTAINER -->
 <div id="toast-container"></div>
 
 <script>
@@ -259,14 +249,15 @@
   const SUB_INDUSTRIES = {
     'byg_anlaeg': ['Tømrer', 'Murer', 'VVS', 'Elektriker', 'Entreprenør', 'Maler', 'Anlægsgartner', 'Brolægger', 'Tagdækker', 'Glarmester'],
     'it_tele': ['Software', 'Konsulent', 'Sikkerhed', 'Infrastruktur', 'Tele', 'Hosting', 'Digitalisering'],
-    'transport_logistik': ['Vognmand', 'Spedition', 'Kurer', 'Lager', 'Flytteforretning', 'Kran', 'Container', 'Buskørsel', 'Taxa', 'Godstransport'],
+    'transport_logistik': ['Vognmand', 'Spedition', 'Kurer', 'Lager', 'Flytteforretning', 'Kran', 'Container', 'Buskørsel', 'Taxa', 'Godstransport', 'Depot', 'Fragtmand'],
     'ejendom_udlejning': ['Boligudlejning', 'Erhvervsudlejning', 'Ejendomsservice', 'Ejendomsudvikling', 'Ejendomsadministration', 'Ejendomsmægler', 'Boligselskab', 'Facility Management'],
     'engros_detail': ['Engros', 'Detailhandel', 'E-handel', 'Webshop', 'Import', 'Eksport', 'B2B Handel', 'Specialhandel'],
     'industri_produktion': ['Maskinfabrik', 'Metal & Stål', 'Plast & Gummi', 'Elektronik', 'Fødevarer & Bryggeri', 'Emballage', 'Automatisering & Robotter', 'Procesindustri'],
     'hotel_restauration': ['Hotel', 'Restaurant', 'Café', 'Kro', 'Camping', 'Catering', 'Bar', 'Natklub', 'Event', 'Museum', 'Forlystelsespark'],
     'finans_jura': ['Revisor', 'Advokat', 'Bogholder', 'Finansiering', 'Pension', 'Forsikring', 'Investering', 'Inkasso'],
     'service_rengoering': ['Rengøring', 'Vaskeri', 'Skadedyr', 'Sikkerhed', 'Kantiner', 'Vikar', 'Anlæg', 'Bemanding'],
-    'sundhed_velfaerd': ['Tandlæge', 'Fysioterapi', 'Læge', 'Kiropraktor', 'Psykolog', 'Privathospital', 'Plejecenter', 'Optiker', 'Osteopat', 'Akupunktur', 'Frisør', 'Skønhedssalon', 'Kosmetolog', 'Plastikkirurgi', 'Tattoo', 'Neglesalon', 'Massage', 'Wellness']
+    'sundhed_velfaerd': ['Tandlæge', 'Fysioterapi', 'Læge', 'Kiropraktor', 'Psykolog', 'Privathospital', 'Plejecenter', 'Optiker', 'Osteopat', 'Akupunktur', 'Frisør', 'Skønhedssalon', 'Kosmetolog', 'Plastikkirurgi', 'Tattoo', 'Neglesalon', 'Massage', 'Wellness'],
+    'undervisning_kurser': ['Efteruddannelse', 'Køreskole', 'Sprogskole', 'Privatskole', 'Fagforening', 'Sikkerhedskursus', 'Førstehjælp', 'E-learning', 'Coaching', 'Akademi']
   };
 
   function showToast(message, type = 'info') {
@@ -374,7 +365,9 @@
 
     let options = null;
 
-    if (campaignId.includes('sundhed') || selectedOptionText.includes('sundhed') || selectedOptionText.includes('klinik') || selectedOptionText.includes('velfærd')) {
+    if (campaignId.includes('undervisning') || selectedOptionText.includes('undervisning') || selectedOptionText.includes('kurser') || selectedOptionText.includes('kursus')) {
+      options = SUB_INDUSTRIES['undervisning_kurser'];
+    } else if (campaignId.includes('sundhed') || selectedOptionText.includes('sundhed') || selectedOptionText.includes('klinik') || selectedOptionText.includes('velfærd')) {
       options = SUB_INDUSTRIES['sundhed_velfaerd'];
     } else if (campaignId.includes('finans') || selectedOptionText.includes('finans') || selectedOptionText.includes('jura')) {
       options = SUB_INDUSTRIES['finans_jura'];
