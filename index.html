@@ -260,7 +260,8 @@
     'byg_anlaeg': ['Tømrer', 'Murer', 'VVS', 'Elektriker', 'Entreprenør', 'Maler', 'Anlægsgartner', 'Brolægger', 'Tagdækker', 'Glarmester'],
     'it_tele': ['Software', 'Konsulent', 'Hosting', 'Webbureau', 'Netværk'],
     'transport_logistik': ['Vognmand', 'Spedition', 'Kurer', 'Lager'],
-    'ejendom_udlejning': ['Boligudlejning', 'Erhvervsudlejning', 'Ejendomsservice', 'Ejendomsudvikling', 'Ejendomsadministration', 'Ejendomsmægler', 'Boligselskab', 'Facility Management']
+    'ejendom_udlejning': ['Boligudlejning', 'Erhvervsudlejning', 'Ejendomsservice', 'Ejendomsudvikling', 'Ejendomsadministration', 'Ejendomsmægler', 'Boligselskab', 'Facility Management'],
+    'engros_detail': ['Engros', 'Detailhandel', 'Webshop', 'Import', 'Eksport', 'B2B Handel', 'Specialhandel']
   };
 
   function showToast(message, type = 'info') {
@@ -374,8 +375,10 @@
       options = SUB_INDUSTRIES['it_tele'];
     } else if (campaignId.includes('transport') || selectedOptionText.includes('logistik')) {
       options = SUB_INDUSTRIES['transport_logistik'];
-    } else if (campaignId.includes('ejendom')) {
+    } else if (campaignId.includes('ejendom') || selectedOptionText.includes('udlejning')) {
       options = SUB_INDUSTRIES['ejendom_udlejning'];
+    } else if (campaignId.includes('engros') || selectedOptionText.includes('engros') || selectedOptionText.includes('detail')) {
+      options = SUB_INDUSTRIES['engros_detail'];
     }
 
     if (options && options.length > 0) {
@@ -653,7 +656,6 @@
       let itemsArr = [];
       let uncalledVal = null;
 
-      // Håndterer om data er et array eller et objekt med aftaler + uncalled count fra n8n
       if (Array.isArray(data)) {
         if (data.length === 1 && data[0] && (data[0].count_uncalled !== undefined || data[0].count !== undefined)) {
           uncalledVal = data[0].count_uncalled || data[0].count;
