@@ -337,6 +337,12 @@
       const select = document.getElementById('campaignSelect');
       select.innerHTML = '';
       
+      // Tilføj "Alle emner" som den første mulighed i dropdown
+      const allOpt = document.createElement('option');
+      allOpt.value = 'alle';
+      allOpt.textContent = '🌐 Alle emner (Vis alt)';
+      select.appendChild(allOpt);
+
       loadedCampaigns.forEach(c => {
         const opt = document.createElement('option');
         opt.value = c.id;
@@ -365,7 +371,9 @@
 
     let options = null;
 
-    if (campaignId.includes('undervisning') || selectedOptionText.includes('undervisning') || selectedOptionText.includes('kurser') || selectedOptionText.includes('kursus')) {
+    if (campaignId === 'alle') {
+      options = null; // Skjul underkategori dropdown når "Alle emner" er valgt
+    } else if (campaignId.includes('undervisning') || selectedOptionText.includes('undervisning') || selectedOptionText.includes('kurser') || selectedOptionText.includes('kursus')) {
       options = SUB_INDUSTRIES['undervisning_kurser'];
     } else if (campaignId.includes('sundhed') || selectedOptionText.includes('sundhed') || selectedOptionText.includes('klinik') || selectedOptionText.includes('velfærd')) {
       options = SUB_INDUSTRIES['sundhed_velfaerd'];
