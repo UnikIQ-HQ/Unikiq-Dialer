@@ -171,7 +171,7 @@
         <button class="btn-status" onclick="submitResult('Ikke Interesseret')">🚫 Ikke Interesseret</button>
         <button class="btn-status" style="border-color:#38bdf8; color:#38bdf8;" onclick="openDateModal('Send Info')">✉ Send Info / Tilbud</button>
         <button class="btn-status" style="border-color:#eab308; color:#eab308;" onclick="openDateModal('Ring Igen')">📅 Ring Igen</button>
-        <button id="meetingBtn" class="btn-status" style="border-color:#22c55e; color:#22c55e; grid-column: span 2;" onclick="openDateModal('Møde Booket')">🎉 Møde Booket</button>
+        <button id="meetingBtn" class="btn-status" style="border-color:#22c55e; color:#22c55e; grid-column: span 2;" onclick="openDateModal('Send Demo')">🚀 Send Demo / Salg</button>
       </div>
     </div>
   </div>
@@ -337,7 +337,6 @@
       const select = document.getElementById('campaignSelect');
       select.innerHTML = '';
       
-      // Tilføj "Alle emner" som den første mulighed i dropdown
       const allOpt = document.createElement('option');
       allOpt.value = 'alle';
       allOpt.textContent = '🌐 Alle emner (Vis alt)';
@@ -372,7 +371,6 @@
     let options = null;
 
     if (campaignId === 'alle') {
-      // Samler alle unikke underkategorier fra samtlige brancher
       const allSubCategories = new Set();
       Object.values(SUB_INDUSTRIES).forEach(list => {
         list.forEach(sub => allSubCategories.add(sub));
@@ -459,9 +457,15 @@
       `;
     }
 
+    // DYNAMISK ÆNDRING AF KNAPPEN BASERET PÅ KAMPAGNE
     if (meetingBtn) {
-      meetingBtn.textContent = '🎉 Møde Booket';
-      meetingBtn.setAttribute('onclick', "openDateModal('Møde Booket')");
+      if (campaignId === 'komplet_lej' || campaignId === '2') {
+        meetingBtn.textContent = '🎉 Møde Booket';
+        meetingBtn.setAttribute('onclick', "openDateModal('Møde Booket')");
+      } else {
+        meetingBtn.textContent = '🚀 Send Demo / Salg';
+        meetingBtn.setAttribute('onclick', "openDateModal('Send Demo')");
+      }
     }
   }
 
@@ -547,8 +551,8 @@
     if (status === 'Møde Booket') {
       document.getElementById('modalTitle').textContent = '🎉 Vælg mødetidspunkt & mægler';
       if (brokerFields && (campaignId === 'komplet_lej' || campaignId === '2')) brokerFields.style.display = 'block';
-    } else if (status === 'Lukket Ordre') {
-      document.getElementById('modalTitle').textContent = '🎉 Registrer Salg & Send Velkomst';
+    } else if (status === 'Send Demo' || status === 'Lukket Ordre') {
+      document.getElementById('modalTitle').textContent = '🚀 Send Demo & Registrer Salg';
     } else if (status === 'Send Info') {
       document.getElementById('modalTitle').textContent = '✉️ Send Tilbud & Vælg Opfølgning';
     } else {
@@ -573,7 +577,7 @@
     const email = document.getElementById('recipientEmail').value;
     const contact = document.getElementById('recipientContact').value;
 
-    if (selectedStatus === 'Send Info' || selectedStatus === 'Lukket Ordre' || selectedStatus === 'Møde Booket') {
+    if (selectedStatus === 'Send Info' || selectedStatus === 'Lukket Ordre' || selectedStatus === 'Send Demo' || selectedStatus === 'Møde Booket') {
       if (!email && selectedStatus !== 'Ring Igen') { 
         if(!confirm('Der er ikke indtastet nogen e-mail. Vil du fortsætte uden at sende e-mail/bekræftelse?')) {
           return;
@@ -702,7 +706,7 @@
   function updateCounters(items, directUncalledCount = null) {
     if (!Array.isArray(items)) items = [];
 
-    const meetings = items.filter(a => a.status === 'Møde Booket' || a.status === 'Lukket Ordre').length;
+    const meetings = items.filter(a => a.status === 'Møde Booket' || a.status === 'Lukket Ordre' || a.status === 'Send Demo').length;
     const offers = items.filter(a => a.status === 'Send Info' || a.status === 'Sendt tilbud').length;
     const callbacks = items.filter(a => a.status === 'Ring Igen').length;
     
@@ -728,7 +732,7 @@
     btn.classList.add('active');
 
     if (type === 'moede') {
-      renderAppointments(allAppointments.filter(a => a.status === 'Møde Booket' || a.status === 'Lukket Ordre'));
+      renderAppointments(allAppointments.filter(a => a.status === 'Møde Booket' || a.status === 'Lukket Ordre' || a.status === 'Send Demo'));
     } else if (type === 'tilbud') {
       renderAppointments(allAppointments.filter(a => a.status === 'Send Info' || a.status === 'Sendt tilbud'));
     } else if (type === 'ring') {
@@ -783,8 +787,8 @@
       let tagText = '📅 RING IGEN';
       let tagColor = '#eab308';
 
-      if (item.status === 'Møde Booket' || item.status === 'Lukket Ordre') {
-        tagText = '🎉 MØDE / SALG';
+      if (item.status === 'Møde Booket' || item.status === 'Lukket Ordre' || item.status === 'Send Demo') {
+        tagText = (item.status === 'Send Demo') ? '🚀 DEMO / SALG' : '🎉 MØDE / SALG';
         tagColor = '#22c55e';
       } else if (item.status === 'Send Info' || item.status === 'Sendt tilbud') {
         tagText = '✉️ TILBUD / OPFØLGNING';
