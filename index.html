@@ -220,9 +220,15 @@
       <input type="text" id="recipientContact" placeholder="Navn på modtager">
     </div>
 
+    <!-- FELT TIL DEMO URL -->
+    <div id="demoUrlFields" style="display:none; margin-top:12px;">
+      <label style="font-size:12px; color:#22c55e; font-weight:bold; display:block;">🌐 DEMO LINK / URL (PERSONLIGT DEMO LINK)</label>
+      <input type="url" id="demoUrlInput" placeholder="f.eks. https://demo.unikiq.dk/firma-navn" style="border-color:#22c55e;">
+    </div>
+
     <div class="btn-group" style="margin-top:20px;">
       <button class="btn" style="background:#475569; color:white;" onclick="closeModal()">Annuller</button>
-      <button class="btn btn-call" onclick="confirmAppointment()">Gem Aftale</button>
+      <button class="btn btn-call" onclick="confirmAppointment()">Gem & Send Aftale</button>
     </div>
   </div>
 </div>
@@ -457,7 +463,6 @@
       `;
     }
 
-    // DYNAMISK ÆNDRING AF KNAPPEN BASERET PÅ KAMPAGNE
     if (meetingBtn) {
       if (campaignId === 'komplet_lej' || campaignId === '2') {
         meetingBtn.textContent = '🎉 Møde Booket';
@@ -540,6 +545,7 @@
     
     const emailFields = document.getElementById('emailFields');
     const brokerFields = document.getElementById('brokerFields');
+    const demoUrlFields = document.getElementById('demoUrlFields');
     const campaignId = document.getElementById('campaignSelect').value;
     
     emailFields.style.display = 'block';
@@ -547,12 +553,14 @@
     document.getElementById('recipientEmail').value = currentLead ? (currentLead.email || '') : '';
 
     if (brokerFields) brokerFields.style.display = 'none';
+    if (demoUrlFields) demoUrlFields.style.display = 'none';
 
     if (status === 'Møde Booket') {
       document.getElementById('modalTitle').textContent = '🎉 Vælg mødetidspunkt & mægler';
       if (brokerFields && (campaignId === 'komplet_lej' || campaignId === '2')) brokerFields.style.display = 'block';
     } else if (status === 'Send Demo' || status === 'Lukket Ordre') {
       document.getElementById('modalTitle').textContent = '🚀 Send Demo & Registrer Salg';
+      if (demoUrlFields) demoUrlFields.style.display = 'block';
     } else if (status === 'Send Info') {
       document.getElementById('modalTitle').textContent = '✉️ Send Tilbud & Vælg Opfølgning';
     } else {
@@ -576,6 +584,7 @@
     const campaignId = document.getElementById('campaignSelect').value;
     const email = document.getElementById('recipientEmail').value;
     const contact = document.getElementById('recipientContact').value;
+    const demoUrl = document.getElementById('demoUrlInput') ? document.getElementById('demoUrlInput').value.trim() : '';
 
     if (selectedStatus === 'Send Info' || selectedStatus === 'Lukket Ordre' || selectedStatus === 'Send Demo' || selectedStatus === 'Møde Booket') {
       if (!email && selectedStatus !== 'Ring Igen') { 
@@ -597,12 +606,13 @@
             appointment_date: datetime,
             notes: currentNotes,
             broker: selectedBroker,
+            demo_url: demoUrl,
             seller: currentUser ? (currentUser.name || currentUser.username) : 'Ukendt'
           })
         });
       } catch(e) { 
         console.error("Fejl ved afsendelse af webhook:", e);
-        showToast("Fejl ved afsendelse af e-mail kladde.", "error");
+        showToast("Fejl ved afsendelse af e-mail.", "error");
       }
     }
 
